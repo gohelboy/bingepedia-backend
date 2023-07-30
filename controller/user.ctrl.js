@@ -8,15 +8,23 @@ const userModel = require("../models/user.model");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const otp = require("../utils/otpGenerate");
+const mailsend = require('../services/mailsend')
 
 exports.register = async (req, res) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password)
     return failedResponse(res, "Invalid values");
   try {
+    const newOTP = otp.generate();
     const existingUser = await userModel.findOne({ email: email });
     if (existingUser && !existingUser?.isVerified) {
-      await userModel.findByIdAndUpdate({ _id: existingUser._id }, { otp: otp.generate() }, { new: true });
+      await userModel.findByIdAndUpdate({ _id: existingUser._id }, { otp: newOTP }, { new: true });
+      await mailsend.sendMail({
+        from: process.env.EMAIL_ID,
+        to: email,
+        subject: "VERIFICATION CODE",
+        html: `<h1 align='center'>${newOTP}</h1>`
+      })
       return successResponseWithData(
         res,
         "Already registered, complete verification!",
@@ -35,10 +43,16 @@ exports.register = async (req, res) => {
     encryptedUser = {
       ...rest,
       password: await bcrypt.hash(password, 10),
-      otp: otp.generate(),
+      otp: newOTP,
     };
     const newUser = new userModel(encryptedUser);
     await newUser.save();
+    await mailsend.sendMail({
+      from: process.env.EMAIL_ID,
+      to: email,
+      subject: "VERIFICATION CODE",
+      html: `<h1 align='center'>${newOTP}</h1>`
+    })
     return successResponse(
       res,
       "Successfully registered, complete your verifiaction!"
@@ -97,6 +111,7 @@ exports.resendOTP = async (req, res) => {
 exports.login = async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return failedResponse(res, "Invalid values");
+  const newOTP = otp.generate();
   try {
     const existingUser = await userModel.findOne({ email: email });
     if (!existingUser) return failedResponse(res, "User not found with this email address!");
@@ -105,6 +120,12 @@ exports.login = async (req, res) => {
       if (!result) return failedResponse(res, "Password is incorrect!");
       if (existingUser && !existingUser?.isVerified) {
         await userModel.findByIdAndUpdate({ _id: existingUser._id }, { otp: otp.generate() }, { new: true });
+        await mailsend.sendMail({
+          from: process.env.EMAIL_ID,
+          to: email,
+          subject: "VERIFICATION CODE",
+          html: `<h1 align='center'>${newOTP}</h1>`
+        })
         return successResponseWithData(
           res,
           "your verifiaction has not been completed yet!",

@@ -1,5 +1,5 @@
 const watchedModel = require("../models/watched.model");
-const { errorResponse, successResponse, successResponseWithData } = require("../utils/response");
+const { errorResponse, successResponse, successResponseWithData, failedResponse } = require("../utils/response");
 
 exports.add_to_watched = async (req, res) => {
     const { data } = req.body;
@@ -42,8 +42,10 @@ exports.remove_from_watched = async (req, res) => {
 }
 
 exports.get_from_watched = async (req, res) => {
+    const { id } = req.body;
+    if (!id) return failedResponse(res, "item not found");
     try {
-        const userData = await watchedModel.findById(req.userId);
+        const userData = await watchedModel.findById(id);
         if (!userData) return successResponse(res, "empty watched!")
         return successResponseWithData(res, "watched", userData.data);
     }

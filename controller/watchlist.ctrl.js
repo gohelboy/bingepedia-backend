@@ -42,12 +42,13 @@ exports.remove_from_watchlist = async (req, res) => {
 }
 
 exports.get_from_watchlist = async (req, res) => {
+    const { id } = req.body;
+    if (!id) return failedResponse(res, "item not found");
     try {
-        const userData = await watchlistModel.findById(req.userId);
+        const userData = await watchlistModel.findById(id);
         if (!userData) return successResponse(res, "empty watchlist!");
         return successResponseWithData(res, "watched list", userData.data);
     } catch (error) {
         return errorResponse(res, error);
     }
-
 }
