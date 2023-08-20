@@ -13,7 +13,7 @@ exports.add_to_watchlist = async (req, res) => {
             return successResponse(res, "added to watchlist")
         }
         await watchlistModel.updateOne({ "_id": req.userId }, { "$push": { data: data } })
-        return successResponse(res, "added to watchlist")
+        return successResponseWithData(res, "added to watchlist", data)
     } catch (error) {
         return errorResponse(res, error);
     }
@@ -35,7 +35,7 @@ exports.remove_from_watchlist = async (req, res) => {
                     }
                 }
             });
-        return successResponse(res, "removed from watchlist")
+        return successResponseWithData(res, "removed from watchlist", id)
     } catch (error) {
         return errorResponse(res, error);
     }

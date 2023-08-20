@@ -13,7 +13,7 @@ exports.add_to_watched = async (req, res) => {
             return successResponse(res, "added to watched");
         }
         await watchedModel.updateOne({ "_id": req.userId }, { "$push": { data: data } })
-        return successResponse(res, "added to watched")
+        return successResponseWithData(res, "added to watched", data);
     } catch (error) {
         return errorResponse(res, error);
     }
@@ -35,7 +35,7 @@ exports.remove_from_watched = async (req, res) => {
                     }
                 }
             });
-        return successResponse(res, "removed from watched")
+        return successResponseWithData(res, "removed from watched", id);
     } catch (error) {
         return errorResponse(res, error);
     }
