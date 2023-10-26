@@ -5,6 +5,7 @@ const morgan = require('morgan');
 const app = express();
 const path = require('path');
 const mongo_connect = require('./services/db_connect');
+const { serverCheckJob } = require('./cron/cron');
 const { notFoundResponse } = require('./utils/response');
 const indexRouter = require('./routes/index.routes');
 
@@ -16,6 +17,13 @@ morgan.format('myformat', '[:date[clf]] :method :url HTTP/:http-version Status: 
 app.use(morgan('myformat'))
 app.use('/public', express.static(path.join(__dirname, "public")));
 app.use('/public/profile-picture', express.static(path.join(__dirname, "public/profile-picture")));
+
+serverCheckJob.start();
+
+app.get("/ping", (res, res) => {
+    console.log("Ping response", res.statusCode);
+    return;
+})
 
 app.use('/api', indexRouter);
 

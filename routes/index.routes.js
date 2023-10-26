@@ -1,4 +1,3 @@
-const { successResponse } = require('../utils/response');
 const userRoute = require('./user.routes')
 const watchlistRoute = require('./watchlist.routes')
 const watchedRoute = require('./watched.routes')
