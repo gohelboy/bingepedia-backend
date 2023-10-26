@@ -20,7 +20,7 @@ app.use('/public/profile-picture', express.static(path.join(__dirname, "public/p
 
 serverCheckJob.start();
 
-app.get("/ping", (res, res) => {
+app.get("/ping", (req, res) => {
     console.log("Ping response", res.statusCode);
     return;
 })
