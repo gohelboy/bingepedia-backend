@@ -153,8 +153,88 @@ exports.login = async (req, res) => {
   }
 };
 
+exports.forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return failedResponse(res, "Invalid values");
+  try {
+    const existingUser = await userModel.findOne({ email });
+    if (!existingUser) return failedResponse(res, "User not found with this email address!");
+
+    const newOTP = otp.generate();
+    existingUser.resetOtp = newOTP;
+    await existingUser.save();
+
+    await mailsend.sendMail({
+      from: process.env.EMAIL_ID,
+      to: email,
+      subject: "PASSWORD RESET CODE",
+      html: `<h1 align='center'>${newOTP}</h1>`,
+    });
+
+    return successResponse(res, "Password reset code sent to your email.");
+  } catch (error) {
+    return errorResponse(res, error);
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  const { email, otp: providedOtp, password } = req.body;
+  if (!email || !providedOtp || !password)
+    return failedResponse(res, "Invalid values");
+  try {
+    const existingUser = await userModel.findOne({ email });
+    if (!existingUser) return failedResponse(res, "User not found");
+    if (existingUser.resetOtp !== providedOtp.toString())
+      return failedResponse(res, "Invalid reset code!");
+
+    existingUser.password = await bcrypt.hash(password, 10);
+    existingUser.resetOtp = null;
+    await existingUser.save();
+
+    return successResponse(res, "Password has been reset successfully.");
+  } catch (error) {
+    return errorResponse(res, error);
+  }
+};
+
 exports.uploadProfilePicture = async (req, res) => {
-  successResponseWithData(res, "Uploading profile picture", {
-    filename: req.file,
-  });
+  try {
+    const userId = req.userId;
+    if (!userId) return failedResponse(res, "Unauthorized");
+
+    const update = {};
+    if (req.body.username) {
+      update.username = req.body.username;
+    }
+    if (req.file && req.file.filename) {
+      update.profile_picture = req.file.filename;
+    }
+
+    if (Object.keys(update).length === 0) {
+      return failedResponse(res, "Nothing to update");
+    }
+
+    const updatedUser = await userModel.findByIdAndUpdate(userId, update, {
+      new: true,
+    });
+
+    if (!updatedUser) return failedResponse(res, "User not found");
+
+    const payload = {
+      id: updatedUser._id,
+      email: updatedUser.email,
+      username: updatedUser.username,
+      profile_picture: updatedUser.profile_picture,
+    };
+
+    const token = jwt.sign(payload, "jwt-secret");
+
+    return successResponseWithData(res, "Profile updated", {
+      ...payload,
+      token,
+      isVerified: updatedUser.isVerified,
+    });
+  } catch (error) {
+    return errorResponse(res, error);
+  }
 };
