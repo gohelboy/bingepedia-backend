@@ -2,9 +2,9 @@ const multer = require('multer');
 const path = require('path');
 
 const storage = multer.diskStorage({
-    destination: __dirname+"./../public/profile-pictures",
+    destination: path.join(__dirname, "../public/profile-picture"),
     filename: (req, file, cb) => {
-        cb(null, (req.userId ? req.userId : Date.now()) +"-"+ file.originalname);
+        cb(null, (req.userId ? req.userId : Date.now()) + "-" + file.originalname);
     },
 })
 
